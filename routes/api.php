@@ -1,0 +1,161 @@
+<?php
+
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\CreatorController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VideoController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Thaedal API v1 Routes
+|
+*/
+
+Route::prefix('v1')->group(function () {
+
+    // ==================== Public Routes ====================
+    
+    // Auth
+    Route::prefix('auth')->group(function () {
+        Route::post('send-otp', [AuthController::class, 'sendOtp']);
+        Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
+        Route::post('refresh', [AuthController::class, 'refresh']);
+    });
+
+    // PUBLIC Videos (no auth required for viewing)
+    Route::prefix('videos')->group(function () {
+        Route::get('/', [VideoController::class, 'index']);
+        Route::get('top', [VideoController::class, 'top']);
+        Route::get('new', [VideoController::class, 'newReleases']);
+        Route::get('today', [VideoController::class, 'today']);
+        Route::get('search', [VideoController::class, 'search']);
+        Route::get('category/{categoryId}', [VideoController::class, 'byCategory']);
+        Route::get('{id}', [VideoController::class, 'show']);
+        Route::get('{id}/comments', [CommentController::class, 'index']);
+    });
+
+    // PUBLIC Categories
+    Route::get('categories', [CategoryController::class, 'index']);
+
+    // PUBLIC Creators
+    Route::prefix('creators')->group(function () {
+        Route::get('{id}', [CreatorController::class, 'show']);
+        Route::get('{id}/videos', [CreatorController::class, 'videos']);
+    });
+
+    // ==================== Protected Routes ====================
+    
+    Route::middleware('auth:sanctum')->group(function () {
+
+        // Auth
+        Route::post('auth/logout', [AuthController::class, 'logout']);
+
+        // User Profile
+        Route::prefix('user')->group(function () {
+            Route::get('profile', [UserController::class, 'profile']);
+            Route::put('profile/update', [UserController::class, 'update']);
+            Route::post('avatar', [UserController::class, 'updateAvatar']);
+            Route::get('saved-videos', [UserController::class, 'savedVideos']);
+            Route::get('watch-history', [UserController::class, 'watchHistory']);
+            Route::post('watch-history/add', [UserController::class, 'addToHistory']);
+        });
+
+        // Video Interactions (require auth)
+        Route::prefix('videos')->group(function () {
+            Route::post('{id}/like', [VideoController::class, 'like']);
+            Route::delete('{id}/like', [VideoController::class, 'unlike']);
+            Route::post('{id}/dislike', [VideoController::class, 'dislike']);
+            Route::delete('{id}/dislike', [VideoController::class, 'removeDislike']);
+            Route::post('{id}/save', [VideoController::class, 'save']);
+            Route::delete('{id}/unsave', [VideoController::class, 'unsave']);
+            Route::post('{id}/comments', [CommentController::class, 'store']);
+        });
+
+        // Subscriptions
+        Route::prefix('subscriptions')->group(function () {
+            Route::get('plans', [SubscriptionController::class, 'plans']);
+            Route::get('my', [SubscriptionController::class, 'mySubscription']);
+            Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
+            Route::post('cancel', [SubscriptionController::class, 'cancel']);
+            Route::post('autopay/enable', [SubscriptionController::class, 'enableAutopay']);
+            Route::post('autopay/disable', [SubscriptionController::class, 'disableAutopay']);
+        });
+
+        // Payments
+        Route::prefix('payments')->group(function () {
+            Route::get('methods', [PaymentController::class, 'methods']);
+            Route::post('methods/add', [PaymentController::class, 'addMethod']);
+            Route::delete('methods/{id}/remove', [PaymentController::class, 'removeMethod']);
+            Route::get('history', [PaymentController::class, 'history']);
+            Route::post('initiate', [PaymentController::class, 'initiate']);
+            Route::post('verify', [PaymentController::class, 'verify']);
+        });
+
+        // Notifications
+        Route::post('notifications/register-token', [NotificationController::class, 'registerToken']);
+
+        // Settings (can be public or protected based on needs)
+        Route::prefix('settings')->group(function () {
+            Route::get('/', function () {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'app_version' => '1.0.0',
+                        'min_version' => '1.0.0',
+                        'force_update' => false,
+                        'maintenance_mode' => false,
+                    ]
+                ]);
+            });
+            Route::get('terms', function () {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'title' => 'Terms & Conditions',
+                        'content' => 'Your terms and conditions content here...',
+                        'updated_at' => now()->toIso8601String(),
+                    ]
+                ]);
+            });
+            Route::get('privacy', function () {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'title' => 'Privacy Policy',
+                        'content' => 'Your privacy policy content here...',
+                        'updated_at' => now()->toIso8601String(),
+                    ]
+                ]);
+            });
+            Route::get('contact', function () {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'email' => 'support@thaedal.com',
+                        'phone' => '+91 9876543210',
+                        'whatsapp' => '+91 9876543210',
+                        'address' => 'Chennai, Tamil Nadu, India',
+                    ]
+                ]);
+            });
+        });
+    });
+});
+
+// Health check
+Route::get('health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
