@@ -123,7 +123,7 @@
     <div class="bg-white rounded-lg shadow">
         <div class="p-6 border-b flex items-center justify-between">
             <div>
-                <h3 class="text-lg font-semibold text-gray-800">≡ƒôê App Timing & User Metrics</h3>
+                <h3 class="text-lg font-semibold text-gray-800">App Timing & User Metrics</h3>
                 <p class="text-sm text-gray-500 mt-1">Time graph + user metrics filters in one place.</p>
             </div>
             <form method="GET" class="flex items-center gap-2 flex-wrap">
@@ -154,11 +154,11 @@
     <div class="bg-white rounded-lg shadow">
         <div class="p-6 border-b flex items-center justify-between">
             <div>
-                <h3 class="text-lg font-semibold text-gray-800">≡ƒôà Upcoming Autopay Forecast</h3>
+                <h3 class="text-lg font-semibold text-gray-800">Upcoming Autopay Forecast</h3>
                 <p class="text-sm text-gray-500 mt-1">Date-wise expected autopay charges (next 2 weeks)</p>
             </div>
             @if($autopayDateFilter)
-                <a href="{{ route('admin.dashboard') }}" class="text-sm text-blue-600 hover:underline">ΓåÉ Show all dates</a>
+                <a href="{{ route('admin.dashboard') }}" class="text-sm text-blue-600 hover:underline">← Show all dates</a>
             @endif
         </div>
 
