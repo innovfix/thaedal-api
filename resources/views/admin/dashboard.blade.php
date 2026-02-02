@@ -1,4 +1,4 @@
-﻿@extends('admin.layouts.app')
+@extends('admin.layouts.app')
 
 @section('title', 'Dashboard')
 @section('page_title', 'Dashboard')
@@ -26,7 +26,7 @@
                 <li class="flex items-center justify-between"><span>Premium users total</span><span class="font-semibold">{{ number_format($stats['premium_users_total']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Total video category</span><span class="font-semibold">{{ number_format($stats['total_categories']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Total videos</span><span class="font-semibold">{{ number_format($stats['total_videos']) }}</span></li>
-                <li class="flex items-center justify-between"><span>Total payment</span><span class="font-semibold">Γé╣{{ number_format($stats['total_payment'], 2) }}</span></li>
+                <li class="flex items-center justify-between"><span>Total payment</span><span class="font-semibold">{{ number_format($stats['total_payment'], 2) }}</span></li>
                 <li class="flex items-center justify-between"><span>Demo video views</span><span class="font-semibold">{{ number_format($stats['paywall_video_views']) }}</span></li>
             </ul>
             @if(!empty($stats['razorpay_error']))
@@ -45,14 +45,14 @@
                 <li class="flex items-center justify-between"><span>Today register user</span><span class="font-semibold">{{ number_format($stats['today_register_users']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Today trial user</span><span class="font-semibold">{{ number_format($stats['today_trial_users']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Today premium user</span><span class="font-semibold">{{ number_format($stats['today_premium_users']) }}</span></li>
-                <li class="flex items-center justify-between"><span>Today payment</span><span class="font-semibold">Γé╣{{ number_format($stats['today_payment'], 2) }}</span></li>
+                <li class="flex items-center justify-between"><span>Today payment</span><span class="font-semibold">{{ number_format($stats['today_payment'], 2) }}</span></li>
             </ul>
         </div>
     </div>
     <!-- Install/Uninstall Stats -->
     <div class="bg-white rounded-lg shadow">
         <div class="p-6 border-b flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-800">├░┼╕ΓÇ£┬▓ App Install/Uninstall</h3>
+            <h3 class="text-lg font-semibold text-gray-800"> App Install/Uninstall</h3>
             <form method="GET" class="flex items-center gap-2">
                 <input type="hidden" name="date" value="{{ $selectedDateInput }}">
                 <input type="date" name="install_date" value="{{ $installDateInput }}" class="border rounded px-3 py-2 text-sm">
@@ -158,7 +158,7 @@
                 <p class="text-sm text-gray-500 mt-1">Date-wise expected autopay charges (next 2 weeks)</p>
             </div>
             @if($autopayDateFilter)
-                <a href="{{ route('admin.dashboard') }}" class="text-sm text-blue-600 hover:underline">← Show all dates</a>
+                <a href="{{ route('admin.dashboard') }}" class="text-sm text-blue-600 hover:underline"> Show all dates</a>
             @endif
         </div>
 
@@ -190,7 +190,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-2 text-center font-semibold">{{ $row->users_count }}</td>
-                            <td class="px-4 py-2 text-right font-semibold text-green-700">Γé╣{{ number_format($row->expected_amount) }}</td>
+                            <td class="px-4 py-2 text-right font-semibold text-green-700">{{ number_format($row->expected_amount) }}</td>
                             <td class="px-4 py-2 text-center">
                                 <a href="?autopay_date={{ $row->charge_date }}" class="text-blue-600 hover:underline text-xs">View Users</a>
                             </td>
@@ -201,7 +201,7 @@
                         <tr>
                             <td class="px-4 py-2 font-semibold">Total</td>
                             <td class="px-4 py-2 text-center font-semibold">{{ $autopaySummary->sum('users_count') }}</td>
-                            <td class="px-4 py-2 text-right font-semibold text-green-700">Γé╣{{ number_format($autopaySummary->sum('expected_amount')) }}</td>
+                            <td class="px-4 py-2 text-right font-semibold text-green-700">{{ number_format($autopaySummary->sum('expected_amount')) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -253,7 +253,7 @@
                                     <span class="ml-1 text-green-600 font-semibold">Today</span>
                                 @endif
                             </td>
-                            <td class="px-3 py-2 text-right font-semibold">Γé╣{{ number_format($sub->plan_price) }}</td>
+                            <td class="px-3 py-2 text-right font-semibold">{{ number_format($sub->plan_price) }}</td>
                             <td class="px-3 py-2 text-center">
                                 <span class="px-2 py-0.5 text-xs rounded-full 
                                     {{ $sub->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
