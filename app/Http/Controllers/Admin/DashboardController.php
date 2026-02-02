@@ -34,4 +34,15 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', compact('stats', 'recent_users', 'recent_payments', 'popular_videos'));
     }
+
+    public function getUserStats(Request $request)
+    {
+        $date = $request->get('date', today()->toDateString());
+
+        return response()->json([
+            'installed' => User::whereDate('created_at', $date)->count(),
+            'uninstalled' => User::onlyTrashed()->whereDate('deleted_at', $date)->count(),
+            'date' => $date,
+        ]);
+    }
 }
