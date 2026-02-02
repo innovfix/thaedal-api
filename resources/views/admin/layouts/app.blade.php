@@ -143,5 +143,6 @@
     @else
     @yield('content')
     @endauth
+    @stack('scripts')
 </body>
 </html>
