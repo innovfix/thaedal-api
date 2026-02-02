@@ -9,7 +9,6 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VideoController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,11 +24,6 @@ Route::prefix('v1')->group(function () {
 
     // ==================== Public Routes ====================
     
-    // Admin Dashboard
-    Route::prefix('admin')->group(function () {
-        Route::get('dashboard/user-stats', [AdminDashboardController::class, 'getUserStats']);
-    });
-
     // Auth
     Route::prefix('auth')->group(function () {
         Route::post('send-otp', [AuthController::class, 'sendOtp']);
