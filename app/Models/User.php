@@ -24,6 +24,7 @@ class User extends Authenticatable
         'is_active',
         'phone_verified_at',
         'last_login_at',
+        'uninstalled_at',
     ];
 
     protected $hidden = [
@@ -37,6 +38,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'phone_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'uninstalled_at' => 'datetime',
         ];
     }
 

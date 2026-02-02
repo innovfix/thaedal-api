@@ -45,6 +45,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('auth:admin')->group(function () {
         // Dashboard
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('dashboard/install-stats', [DashboardController::class, 'installStats'])->name('dashboard.install-stats');
 
         // User Management
         Route::resource('users', UserController::class)->except(['create', 'store', 'edit', 'update']);

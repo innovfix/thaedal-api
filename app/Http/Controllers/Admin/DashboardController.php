@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -33,5 +34,34 @@ class DashboardController extends Controller
             ->get();
 
         return view('admin.dashboard', compact('stats', 'recent_users', 'recent_payments', 'popular_videos'));
+    }
+
+    /**
+     * Get install/uninstall stats for a specific date
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function installStats(Request $request)
+    {
+        $date = $request->input('date', today()->toDateString());
+        
+        try {
+            $targetDate = Carbon::parse($date);
+        } catch (\Exception $e) {
+            $targetDate = today();
+        }
+
+        $installedCount = User::whereDate('created_at', $targetDate)->count();
+        $uninstalledCount = User::whereDate('uninstalled_at', $targetDate)->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'date' => $targetDate->toDateString(),
+                'installed_count' => $installedCount,
+                'uninstalled_count' => $uninstalledCount,
+            ]
+        ]);
     }
 }
