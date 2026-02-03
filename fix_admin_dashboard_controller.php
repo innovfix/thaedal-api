@@ -1,0 +1,139 @@
+<?php
+/**
+ * Patch script: fixes Admin dashboard "Active Subscriptions" count and "Recent Payments" list.
+ *
+ * Copies a corrected DashboardController into the live server path.
+ * Run this on the server (or in the same filesystem layout) where:
+ *   /var/www/thaedal/api/ is the Laravel project root.
+ */
+
+$file = '/var/www/thaedal/api/app/Http/Controllers/Admin/DashboardController.php';
+
+$content = <<<'PHP'
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use App\Models\Payment;
+use App\Models\Subscription;
+use App\Models\User;
+use App\Models\Video;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+
+class DashboardController extends Controller
+{
+    public function index(Request $request)
+    {
+        // Range selector (used for revenue + new counts). Active subscriptions should be "current", not range-limited.
+        $range = (string) $request->query('range', '30d');
+
+        [$from, $rangeLabel] = match ($range) {
+            'today' => [now()->startOfDay(), 'Today'],
+            '7d' => [now()->subDays(7)->startOfDay(), 'Last 7 days'],
+            '30d' => [now()->subDays(30)->startOfDay(), 'Last 30 days'],
+            'all' => [null, 'All time'],
+            default => [now()->subDays(30)->startOfDay(), 'Last 30 days'],
+        };
+
+        // Users
+        $totalUsers = User::query()->count();
+        $newUsersToday = User::query()->whereDate('created_at', now()->toDateString())->count();
+
+        // Active subscriptions (FIX)
+        // - Do NOT rely on users.is_subscribed, because some flows set it false immediately when autopay is cancelled,
+        //   while the user may still have a valid subscription until ends_at.
+        // - Count distinct users that have a valid subscription (active/trial and not expired), plus any admin-forced premium users.
+        $validSubQuery = Subscription::query()
+            ->whereIn('status', ['active', 'trial'])
+            ->where(function ($q) {
+                $q->whereNull('ends_at')
+                    ->orWhere('ends_at', '>', now());
+            });
+
+        $activeSubscriptionUsers = (int) $validSubQuery->distinct('user_id')->count('user_id');
+
+        // Admin manual premium toggle without a currently-valid subscription record
+        $adminForcedPremiumUsers = (int) User::query()
+            ->where('is_subscribed', true)
+            ->whereDoesntHave('subscriptions', function ($q) {
+                $q->whereIn('status', ['active', 'trial'])
+                    ->where(function ($q2) {
+                        $q2->whereNull('ends_at')
+                            ->orWhere('ends_at', '>', now());
+                    });
+            })
+            ->count();
+
+        $activeSubscriptions = $activeSubscriptionUsers + $adminForcedPremiumUsers;
+
+        // New subscriptions today (kept simple; counts subscription records created today)
+        $newSubscriptionsToday = Subscription::query()
+            ->whereIn('status', ['active', 'trial'])
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        // Videos / Categories
+        $totalVideos = Video::query()->count();
+        $totalCategories = Category::query()->count();
+
+        // Payments / revenue (use paid_at when available)
+        $paymentsForRevenue = Payment::query()->where('status', 'success');
+        if ($from instanceof Carbon) {
+            $paymentsForRevenue->where(function ($q) use ($from) {
+                $q->where('paid_at', '>=', $from)
+                    ->orWhere(function ($q2) use ($from) {
+                        $q2->whereNull('paid_at')->where('created_at', '>=', $from);
+                    });
+            });
+        }
+        $dbRevenue = (float) $paymentsForRevenue->sum('amount');
+
+        // Recent lists (FIX recent payments ordering/filtering)
+        $recentUsers = User::query()->latest('created_at')->limit(5)->get();
+
+        // Show truly recent payments (not accidentally range-limited and ordered by paid_at when present)
+        $recentPayments = Payment::query()
+            ->with('user')
+            ->orderByRaw('CASE WHEN paid_at IS NULL THEN 1 ELSE 0 END ASC') // paid_at first
+            ->orderByDesc('paid_at')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        // Avoid brittle "popular" ordering (column names vary across deployments)
+        $popularVideos = Video::query()->latest('created_at')->limit(10)->get();
+
+        $stats = [
+            'total_users' => $totalUsers,
+            'new_users_today' => $newUsersToday,
+            'active_subscriptions' => $activeSubscriptions,
+            'new_subscriptions_today' => $newSubscriptionsToday,
+            'total_videos' => $totalVideos,
+            'total_categories' => $totalCategories,
+            'db_revenue' => $dbRevenue,
+            // keep Razorpay blocks graceful (view will display "Not configured")
+            'razorpay_gross' => null,
+            'razorpay_settled' => null,
+            'razorpay_error' => '',
+        ];
+
+        return view('admin.dashboard', [
+            'stats' => $stats,
+            'recent_users' => $recentUsers,
+            'recent_payments' => $recentPayments,
+            'popular_videos' => $popularVideos,
+            'range' => $range,
+            'rangeLabel' => $rangeLabel,
+        ]);
+    }
+}
+PHP;
+
+@mkdir(dirname($file), 0775, true);
+file_put_contents($file, $content);
+
+echo "Admin DashboardController written to: {$file}\n";
+

@@ -9,7 +9,7 @@
 </div>
 
 <div class="bg-white rounded-lg shadow p-6 max-w-3xl">
-    <form action="{{ route('admin.videos.update', $video) }}" method="POST">
+    <form action="{{ route('admin.videos.update', $video) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         
@@ -30,15 +30,27 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Video URL *</label>
-                    <input type="url" name="video_url" required value="{{ old('video_url', $video->video_url) }}"
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload New Video</label>
+                    <input type="file" name="video_file" accept="video/*"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
+                    <p class="text-gray-500 text-xs mt-1">Leave empty to keep current video</p>
+                    @error('video_file')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+                    
+                    <label class="block text-sm font-medium text-gray-700 mb-2 mt-3">Video URL</label>
+                    <input type="url" name="video_url" value="{{ old('video_url', $video->video_url) }}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
                     @error('video_url')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL *</label>
-                    <input type="url" name="thumbnail_url" required value="{{ old('thumbnail_url', $video->thumbnail_url) }}"
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload New Thumbnail</label>
+                    <input type="file" name="thumbnail_file" accept="image/*"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
+                    <p class="text-gray-500 text-xs mt-1">Leave empty to keep current thumbnail</p>
+                    @error('thumbnail_file')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+                    
+                    <label class="block text-sm font-medium text-gray-700 mb-2 mt-3">Thumbnail URL</label>
+                    <input type="url" name="thumbnail_url" value="{{ old('thumbnail_url', $video->thumbnail_url) }}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
                     @error('thumbnail_url')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>

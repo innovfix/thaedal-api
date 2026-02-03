@@ -1,0 +1,47 @@
+@extends('admin.layouts.app')
+
+@section('title', 'Send Notification')
+@section('page_title', 'Send Notification')
+
+@section('content')
+@if(!$configured)
+    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        OneSignal is not configured. Please go to <a class="underline" href="{{ route('admin.notifications.settings') }}">Settings</a>.
+    </div>
+@endif
+
+<div class="bg-white rounded-lg shadow p-6">
+    <form method="POST" action="{{ route('admin.notifications.send') }}" class="space-y-5">
+        @csrf
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Title</label>
+            <input type="text" name="title" value="{{ old('title') }}" maxlength="80"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
+            @error('title')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Message</label>
+            <textarea name="message" rows="3" maxlength="240"
+                      class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">{{ old('message') }}</textarea>
+            @error('message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">URL (optional)</label>
+            <input type="text" name="url" value="{{ old('url') }}"
+                   placeholder="https://..."
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
+            @error('url')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="px-6 py-2 gradient-gold text-navy font-semibold rounded-lg hover:opacity-90" {{ !$configured ? 'disabled' : '' }}>
+                Send
+            </button>
+            <a href="{{ route('admin.notifications.index') }}" class="text-blue-600 hover:text-blue-800 text-sm">Back →</a>
+        </div>
+    </form>
+</div>
+@endsection

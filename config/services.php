@@ -56,6 +56,12 @@ return [
         'phone_number' => env('TWILIO_PHONE_NUMBER'),
     ],
 
+    'authkey' => [
+        'endpoint' => env('AUTHKEY_ENDPOINT', 'https://api.authkey.io/request'),
+        'api_key' => env('AUTHKEY_API_KEY'),
+        'sid' => env('AUTHKEY_SID'),
+    ],
+
     'msg91' => [
         'auth_key' => env('MSG91_AUTH_KEY'),
         'sender_id' => env('MSG91_SENDER_ID'),

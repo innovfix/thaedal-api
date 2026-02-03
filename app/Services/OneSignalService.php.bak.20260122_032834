@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+
+class OneSignalService
+{
+    public function appId(): string
+    {
+        return (string) config('services.onesignal.app_id');
+    }
+
+    public function hasAppId(): bool
+    {
+        return $this->appId() !== '';
+    }
+
+    public function hasRestApiKey(): bool
+    {
+        return (string) config('services.onesignal.rest_api_key') !== '';
+    }
+
+    public function configured(): bool
+    {
+        return $this->hasAppId() && $this->hasRestApiKey();
+    }
+
+    /**
+     * Send a push notification to OneSignal.
+     *
+     * @param string $title
+     * @param string $message
+     * @param array $options Supported keys: url, audience (all|premium|free), big_picture
+     */
+    public function send(string $title, string $message, array $options = []): array
+    {
+        $appId = $this->appId();
+        $apiKey = (string) config('services.onesignal.rest_api_key');
+
+        if ($appId === '' || $apiKey === '') {
+            throw new \RuntimeException('OneSignal is not configured (missing ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY).');
+        }
+
+        $payload = [
+            'app_id' => $appId,
+            'headings' => ['en' => $title],
+            'contents' => ['en' => $message],
+        ];
+
+        // Audience targeting using OneSignal tags
+        // Android app should set tag "subscription_status" = "premium" or "free"
+        $audience = $options['audience'] ?? 'all';
+        
+        if ($audience === 'premium') {
+            // Target only premium/subscribed users (Android tag: subscribed=true)
+            $payload['filters'] = [
+                ['field' => 'tag', 'key' => 'subscribed', 'relation' => '=', 'value' => 'true'],
+            ];
+        } elseif ($audience === 'free') {
+            // Target only free users (Android tag: subscribed=false)
+            $payload['filters'] = [
+                ['field' => 'tag', 'key' => 'subscribed', 'relation' => '=', 'value' => 'false'],
+            ];
+        } else {
+            // All users
+            $payload['included_segments'] = ['All'];
+        }
+
+        // Optional URL (deep link)
+        if (!empty($options['url'])) {
+            $payload['url'] = $options['url'];
+        }
+
+        // Optional big picture (image)
+        if (!empty($options['big_picture'])) {
+            $payload['big_picture'] = $options['big_picture'];
+        }
+
+        $resp = Http::withHeaders([
+            'Authorization' => "Basic {$apiKey}",
+            'Accept' => 'application/json',
+        ])->post('https://onesignal.com/api/v1/notifications', $payload);
+
+        if (!$resp->successful()) {
+            throw new \RuntimeException('OneSignal API error: ' . $resp->status() . ' ' . $resp->body());
+        }
+
+        return $resp->json();
+    }
+
+    /**
+     * Get notification delivery stats from OneSignal.
+     */
+    public function getStats(string $notificationId): ?array
+    {
+        $appId = $this->appId();
+        $apiKey = (string) config('services.onesignal.rest_api_key');
+
+        if ($appId === '' || $apiKey === '') {
+            return null;
+        }
+
+        $resp = Http::withHeaders([
+            'Authorization' => "Basic {$apiKey}",
+            'Accept' => 'application/json',
+        ])->get("https://onesignal.com/api/v1/notifications/{$notificationId}?app_id={$appId}");
+
+        return $resp->successful() ? $resp->json() : null;
+    }
+}

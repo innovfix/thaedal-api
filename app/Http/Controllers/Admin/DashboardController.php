@@ -24,12 +24,6 @@ class DashboardController extends Controller
         $selectedDateLabel = $selectedDate->format('M d, Y');
         $selectedDateInput = $selectedDate->toDateString();
 
-        // Separate date for Install/Uninstall card
-        $installDateInput = $request->query('install_date');
-        $installDate = $installDateInput ? Carbon::parse($installDateInput) : now();
-        $installDate = $installDate->startOfDay();
-        $installDateInput = $installDate->toDateString();
-
         $scatterFromInput = $request->query('scatter_from');
         $scatterToInput = $request->query('scatter_to');
         $scatterFrom = $scatterFromInput ? Carbon::parse($scatterFromInput)->startOfDay() : now()->subDay()->startOfDay();
@@ -113,18 +107,23 @@ class DashboardController extends Controller
             ->distinct('user_id')
             ->count('user_id');
 
-        // Install/Uninstall counts for installDate (separate filter)
+
+        // Install/Uninstall counts (based on users.uninstalled_at)
         $todayInstalledUsers = User::query()
-            ->whereDate('created_at', $installDate->toDateString())
+            ->whereDate('created_at', $selectedDate->toDateString())
             ->count();
 
-        $todayUninstalledUsers = User::withTrashed()
-            ->whereDate('uninstalled_at', $installDate->toDateString())
+        $todayUninstalledUsers = User::query()
+            ->whereNotNull('uninstalled_at')
+            ->whereDate('uninstalled_at', $selectedDate->toDateString())
             ->count();
 
         // Total installs/uninstalls
-        $totalInstalledUsers = User::withTrashed()->count();
-        $totalUninstalledUsers = User::withTrashed()->whereNotNull('uninstalled_at')->count();
+        $totalUninstalledUsers = User::query()
+            ->whereNotNull('uninstalled_at')
+            ->count();
+
+        $totalInstalledUsers = max(0, $totalUsers - $totalUninstalledUsers);
 
         // Autopay totals
         $autopayEnabledUsers = Subscription::query()
@@ -265,7 +264,6 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'stats' => $stats,
             'selectedDateInput' => $selectedDateInput,
-            'installDateInput' => $installDateInput,
             'selectedDateLabel' => $selectedDateLabel,
             'autopaySummary' => $autopaySummary,
             'upcomingAutopay' => $upcomingAutopay,

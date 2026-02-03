@@ -1,0 +1,1 @@
+73:                        {{ $user->created_at->format('M d, Y H:i') }}

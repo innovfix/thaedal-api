@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VideoController;
+use App\Http\Controllers\Api\PaywallController;
+use App\Http\Controllers\Api\HomeTopicController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -45,6 +47,12 @@ Route::prefix('v1')->group(function () {
 
     // PUBLIC Categories
     Route::get('categories', [CategoryController::class, 'index']);
+
+    // PUBLIC Featured Videos & Home Topics
+    Route::get('featured-videos', [VideoController::class, 'featured']);
+    Route::get('home-topics', [HomeTopicController::class, 'index']);
+    Route::get('home-topics/{id}/videos', [HomeTopicController::class, 'videos']);
+
 
     // PUBLIC Creators
     Route::prefix('creators')->group(function () {
@@ -102,6 +110,14 @@ Route::prefix('v1')->group(function () {
 
         // Notifications
         Route::post('notifications/register-token', [NotificationController::class, 'registerToken']);
+
+        // Paywall / Access Control
+        Route::prefix('paywall')->group(function () {
+            Route::get('state', [PaywallController::class, 'state']);
+            Route::post('autopay-prompt-shown', [PaywallController::class, 'autopayPromptShown']);
+            Route::post('video-viewed', [PaywallController::class, 'paywallVideoViewed']);
+        });
+
 
         // Settings (can be public or protected based on needs)
         Route::prefix('settings')->group(function () {

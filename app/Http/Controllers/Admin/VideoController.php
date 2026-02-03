@@ -7,6 +7,7 @@ use App\Models\Video;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class VideoController extends Controller
 {
@@ -42,8 +43,10 @@ class VideoController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'video_url' => 'required|url',
-            'thumbnail_url' => 'required|url',
+            'video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv,webm|max:512000',
+            'video_url' => 'nullable|url',
+            'thumbnail_file' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'thumbnail_url' => 'nullable|url',
             'category_id' => 'required|exists:categories,id',
             'creator_name' => 'required|string|max:255',
             'creator_thumbnail' => 'nullable|url',
@@ -52,6 +55,36 @@ class VideoController extends Controller
             'tags' => 'nullable|string',
         ]);
 
+        // Handle video file upload
+        if ($request->hasFile('video_file')) {
+            $videoPath = $request->file('video_file')->store('videos', 'public');
+            $validated['video_url'] = asset('storage/' . $videoPath);
+        }
+        
+        // Handle thumbnail file upload
+        if ($request->hasFile('thumbnail_file')) {
+            $thumbPath = $request->file('thumbnail_file')->store('thumbnails', 'public');
+            $validated['thumbnail_url'] = asset('storage/' . $thumbPath);
+        }
+        
+        // Handle video file upload
+        if ($request->hasFile('video_file')) {
+            $videoPath = $request->file('video_file')->store('videos', 'public');
+            $validated['video_url'] = url('storage/' . $videoPath);
+        } elseif (empty($validated['video_url'])) {
+            // Keep existing URL if no new file or URL provided
+            unset($validated['video_url']);
+        }
+        
+        // Handle thumbnail file upload
+        if ($request->hasFile('thumbnail_file')) {
+            $thumbPath = $request->file('thumbnail_file')->store('thumbnails', 'public');
+            $validated['thumbnail_url'] = url('storage/' . $thumbPath);
+        } elseif (empty($validated['thumbnail_url'])) {
+            // Keep existing URL if no new file or URL provided
+            unset($validated['thumbnail_url']);
+        }
+        
         // Find or create creator
         $creator = \App\Models\Creator::firstOrCreate(
             ['name' => $validated['creator_name']],
@@ -98,8 +131,10 @@ class VideoController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'video_url' => 'required|url',
-            'thumbnail_url' => 'required|url',
+            'video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv,webm|max:512000',
+            'video_url' => 'nullable|url',
+            'thumbnail_file' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'thumbnail_url' => 'nullable|url',
             'category_id' => 'required|exists:categories,id',
             'creator_name' => 'required|string|max:255',
             'creator_thumbnail' => 'nullable|url',
@@ -108,6 +143,24 @@ class VideoController extends Controller
             'tags' => 'nullable|string',
         ]);
 
+        // Handle video file upload
+        if ($request->hasFile('video_file')) {
+            $videoPath = $request->file('video_file')->store('videos', 'public');
+            $validated['video_url'] = url('storage/' . $videoPath);
+        } elseif (empty($validated['video_url'])) {
+            // Keep existing URL if no new file or URL provided
+            unset($validated['video_url']);
+        }
+        
+        // Handle thumbnail file upload
+        if ($request->hasFile('thumbnail_file')) {
+            $thumbPath = $request->file('thumbnail_file')->store('thumbnails', 'public');
+            $validated['thumbnail_url'] = url('storage/' . $thumbPath);
+        } elseif (empty($validated['thumbnail_url'])) {
+            // Keep existing URL if no new file or URL provided
+            unset($validated['thumbnail_url']);
+        }
+        
         // Find or create creator
         $creator = \App\Models\Creator::firstOrCreate(
             ['name' => $validated['creator_name']],

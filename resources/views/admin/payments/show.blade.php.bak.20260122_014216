@@ -1,0 +1,76 @@
+@extends('admin.layouts.app')
+
+@section('title', 'Payment Details')
+@section('page_title', 'Payment Details')
+
+@section('content')
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-xl font-bold">Payment #{{ $payment->order_id }}</h2>
+            <p class="text-gray-500">{{ $payment->created_at->format('M d, Y H:i') }}</p>
+        </div>
+        <span class="px-3 py-1 text-sm rounded-full {{ $payment->status === 'success' ? 'bg-green-100 text-green-800' : ($payment->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+            {{ ucfirst($payment->status) }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">User</h3>
+            @if($payment->user)
+            <p>{{ $payment->user->name ?? 'N/A' }}</p>
+            <p class="text-gray-500">{{ $payment->user->phone_number }}</p>
+            <a href="{{ route('admin.users.show', $payment->user) }}" class="text-blue-600 hover:text-blue-800 text-sm">View User →</a>
+            @else
+            <p class="text-gray-500">User not found</p>
+            @endif
+        </div>
+
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">Amount</h3>
+            <p class="text-3xl font-bold">₹{{ number_format($payment->amount, 2) }}</p>
+            <p class="text-gray-500">{{ $payment->currency }}</p>
+        </div>
+
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">Payment Method</h3>
+            <p>{{ ucfirst($payment->payment_method ?? 'N/A') }}</p>
+        </div>
+
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">Description</h3>
+            <p>{{ $payment->description ?? 'N/A' }}</p>
+        </div>
+
+        <div class="md:col-span-2">
+            <h3 class="font-semibold text-gray-700 mb-2">Razorpay Details</h3>
+            <div class="bg-gray-50 rounded p-4 text-sm">
+                <p><span class="text-gray-600">Order ID:</span> {{ $payment->razorpay_order_id ?? 'N/A' }}</p>
+                <p><span class="text-gray-600">Payment ID:</span> {{ $payment->razorpay_payment_id ?? 'N/A' }}</p>
+                @if($payment->paid_at)
+                <p><span class="text-gray-600">Paid At:</span> {{ $payment->paid_at->format('M d, Y H:i:s') }}</p>
+                @endif
+                @if($payment->failure_reason)
+                <p class="text-red-600"><span class="text-gray-600">Failure Reason:</span> {{ $payment->failure_reason }}</p>
+                @endif
+            </div>
+        </div>
+
+        @if($payment->subscription)
+        <div class="md:col-span-2">
+            <h3 class="font-semibold text-gray-700 mb-2">Linked Subscription</h3>
+            <div class="bg-gray-50 rounded p-4">
+                <p>Plan: {{ $payment->subscription->plan->name ?? 'N/A' }}</p>
+                <p>Status: {{ ucfirst($payment->subscription->status) }}</p>
+                <a href="{{ route('admin.subscriptions.show', $payment->subscription) }}" class="text-blue-600 hover:text-blue-800 text-sm">View Subscription →</a>
+            </div>
+        </div>
+        @endif
+    </div>
+</div>
+
+<div class="mt-6">
+    <a href="{{ route('admin.payments.index') }}" class="text-blue-600 hover:text-blue-800">← Back to Payments</a>
+</div>
+@endsection

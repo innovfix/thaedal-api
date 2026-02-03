@@ -55,11 +55,19 @@ class Otp extends Model
 
     public static function generate(string $phoneNumber, string $ipAddress = null): self
     {
-        // Invalidate previous OTPs
-        static::forPhone($phoneNumber)->valid()->update(['is_used' => true]);
-        
         $otpLength = (int) config('app.otp_length', 6);
         $expiryMinutes = (int) config('app.otp_expiry_minutes', 5);
+        
+        // Reuse existing valid OTP if one exists (prevents "Invalid OTP" when SMS is delayed)
+        $existing = static::forPhone($phoneNumber)->valid()->first();
+        if ($existing) {
+            // Extend expiry and return the same OTP
+            $existing->update(['expires_at' => now()->addMinutes($expiryMinutes)]);
+            return $existing;
+        }
+        
+        // Invalidate old expired/used OTPs (cleanup)
+        static::forPhone($phoneNumber)->where('is_used', true)->delete();
         
         return static::create([
             'phone_number' => $phoneNumber,

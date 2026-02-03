@@ -31,6 +31,36 @@ class VideoController extends Controller
     }
 
     /**
+     * Get featured videos for home screen (ordered 1..10).
+     * Falls back to top videos by views if no featured videos exist.
+     */
+    public function featured(Request $request): JsonResponse
+    {
+        $limit = (int) $request->input('limit', 20);
+        $limit = max(1, min($limit, 50));
+
+        // First try to get featured videos
+        $videos = Video::published()
+            ->featured()
+            ->with(['category', 'creator'])
+            ->orderByRaw('home_sort_order IS NULL, home_sort_order ASC')
+            ->orderByDesc('published_at')
+            ->limit($limit)
+            ->get();
+        
+        // If no featured videos, return top videos by views
+        if ($videos->isEmpty()) {
+            $videos = Video::published()
+                ->with(['category', 'creator'])
+                ->orderByDesc('views_count')
+                ->limit($limit)
+                ->get();
+        }
+
+        return $this->success(VideoResource::collection($videos));
+    }
+
+    /**
      * Get top/popular videos
      */
     public function top(Request $request): JsonResponse

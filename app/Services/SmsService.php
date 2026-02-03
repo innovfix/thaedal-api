@@ -32,6 +32,7 @@ class SmsService
         return match ($this->gateway) {
             'twilio' => $this->sendViaTwilio($phoneNumber, $message),
             'msg91' => $this->sendViaMsg91($phoneNumber, $message),
+            'authkey' => $this->sendViaAuthKey($phoneNumber, $message),
             default => $this->logMessage($phoneNumber, $message),
         };
     }
@@ -103,6 +104,50 @@ class SmsService
             return false;
         }
     }
+
+    /**
+     * Send via AuthKey (India)
+     */
+    protected function sendViaAuthKey(string $phoneNumber, string $message): bool
+    {
+        try {
+            $endpoint = config('services.authkey.endpoint', 'https://api.authkey.io/request');
+            $apiKey = config('services.authkey.api_key');
+            $sid = config('services.authkey.sid');
+
+            preg_match('/\d{6}/', $message, $matches);
+            $otp = $matches[0] ?? '';
+
+            $mobile = ltrim($phoneNumber, '+');
+            if (str_starts_with($mobile, '91') && strlen($mobile) == 12) {
+                $mobile = substr($mobile, 2);
+            }
+
+            $params = [
+                'authkey' => $apiKey,
+                'mobile' => $mobile,
+                'country_code' => '91',
+                'sid' => $sid,
+                'otp' => $otp,
+                'company' => 'Thaedal',
+            ];
+
+            $response = Http::get($endpoint, $params);
+
+            if ($response->successful()) {
+                $body = $response->json();
+                Log::info("SMS sent via AuthKey to {$phoneNumber}", ['response' => $body]);
+                return true;
+            }
+
+            Log::error("AuthKey SMS failed: " . $response->body());
+            return false;
+        } catch (\Exception $e) {
+            Log::error("AuthKey SMS error: " . $e->getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * Log message (for development)

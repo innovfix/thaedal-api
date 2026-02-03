@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CreatorController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +69,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Payment Management
         Route::resource('payments', PaymentController::class)->only(['index', 'show']);
+        // Notification Management
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('notifications/create', [NotificationController::class, 'create'])->name('notifications.create');
+        Route::post('notifications/send', [NotificationController::class, 'send'])->name('notifications.send');
+        Route::get('notifications/settings', [NotificationController::class, 'settings'])->name('notifications.settings');
+        Route::post('notifications/settings', [NotificationController::class, 'updateSettings'])->name('notifications.updateSettings');
+
     });
 });
-

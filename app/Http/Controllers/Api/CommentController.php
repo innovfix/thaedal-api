@@ -35,7 +35,7 @@ class CommentController extends Controller
 
         return $this->paginated(
             $comments->setCollection(
-                CommentResource::collection($comments->getCollection())
+                CommentResource::collection($comments->getCollection())->collect()
             )
         );
     }

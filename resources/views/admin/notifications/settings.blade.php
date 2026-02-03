@@ -1,0 +1,60 @@
+@extends('admin.layouts.app')
+
+@section('title', 'Notification Settings')
+@section('page_title', 'Notification Settings')
+
+@section('content')
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-start justify-between gap-6">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">OneSignal Settings</h2>
+            <p class="text-gray-600 mt-1">Set OneSignal keys to enable push notifications.</p>
+        </div>
+        <div>
+            @if($configured)
+                <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800">Configured</span>
+            @else
+                <span class="px-3 py-1 text-sm rounded-full bg-red-100 text-red-800">Not configured</span>
+            @endif
+        </div>
+    </div>
+
+    <div class="mt-4 p-4 rounded bg-gray-50 text-sm text-gray-700">
+        <div class="font-semibold mb-2">Where to find these in OneSignal</div>
+        <ul class="list-disc pl-5 space-y-1">
+            <li><b>App ID</b>: OneSignal → Your App → Settings → Keys & IDs</li>
+            <li><b>REST API Key</b>: Same page (keep it secret)</li>
+        </ul>
+    </div>
+
+    <form method="POST" action="{{ route('admin.notifications.settings.update') }}" class="mt-6 space-y-5">
+        @csrf
+        @method('PUT')
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">ONESIGNAL_APP_ID</label>
+            <input type="text" name="onesignal_app_id" value="{{ old('onesignal_app_id', $appId) }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
+            @error('onesignal_app_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">ONESIGNAL_REST_API_KEY</label>
+            <input type="password" name="onesignal_rest_api_key" value=""
+                   placeholder="Paste here to update (leave blank to keep existing)"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold">
+            @error('onesignal_rest_api_key')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            @if(!$hasRestApiKey)
+                <p class="text-xs text-red-600 mt-1">REST API Key is missing. Notifications cannot be sent until it is set.</p>
+            @endif
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="px-6 py-2 gradient-gold text-navy font-semibold rounded-lg hover:opacity-90">
+                Save
+            </button>
+            <a href="{{ route('admin.notifications.index') }}" class="text-blue-600 hover:text-blue-800 text-sm">Back →</a>
+        </div>
+    </form>
+</div>
+@endsection

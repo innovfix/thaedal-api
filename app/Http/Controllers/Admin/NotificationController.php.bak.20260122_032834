@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Services\OneSignalService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
+
+class NotificationController extends Controller
+{
+    private string $historyPath;
+
+    public function __construct(private readonly OneSignalService $oneSignal)
+    {
+        $this->historyPath = storage_path('app/admin_notification_history.json');
+    }
+
+    public function index()
+    {
+        $history = $this->readHistory();
+
+        return view('admin.notifications.index', [
+            'configured' => $this->oneSignal->configured(),
+            'hasAppId' => $this->oneSignal->hasAppId(),
+            'hasRestApiKey' => $this->oneSignal->hasRestApiKey(),
+            'appId' => $this->oneSignal->appId(),
+            'history' => $history,
+        ]);
+    }
+
+    public function create()
+    {
+        return view('admin.notifications.create', [
+            'configured' => $this->oneSignal->configured(),
+        ]);
+    }
+
+    public function send(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:80',
+            'message' => 'required|string|max:240',
+            'url' => 'nullable|string|max:500',
+            'audience' => 'required|in:all,premium,free',
+            'big_picture' => 'nullable|url|max:500',
+        ]);
+
+        try {
+            $resp = $this->oneSignal->send(
+                $validated['title'],
+                $validated['message'],
+                [
+                    'url' => $validated['url'] ?? null,
+                    'audience' => $validated['audience'],
+                    'big_picture' => $validated['big_picture'] ?? null,
+                ]
+            );
+
+            $audienceLabels = [
+                'all' => 'All Users',
+                'premium' => 'Premium Users',
+                'free' => 'Free Users',
+            ];
+
+            $this->appendHistory([
+                'sent_at' => now()->toDateTimeString(),
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'url' => $validated['url'] ?? null,
+                'audience' => $audienceLabels[$validated['audience']] ?? $validated['audience'],
+                'onesignal_id' => $resp['id'] ?? null,
+                'recipients' => $resp['recipients'] ?? null,
+            ]);
+
+            $recipientCount = $resp['recipients'] ?? 0;
+            return redirect()->route('admin.notifications.index')
+                ->with('success', "Notification sent successfully to {$recipientCount} recipients.");
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    public function settings()
+    {
+        return view('admin.notifications.settings', [
+            'appId' => (string) config('services.onesignal.app_id'),
+            'configured' => $this->oneSignal->configured(),
+            'hasAppId' => $this->oneSignal->hasAppId(),
+            'hasRestApiKey' => $this->oneSignal->hasRestApiKey(),
+        ]);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'onesignal_app_id' => 'nullable|string|max:128',
+            'onesignal_rest_api_key' => 'nullable|string|max:256',
+        ]);
+
+        $envPath = base_path('.env');
+        if (!File::exists($envPath) || !File::isWritable($envPath)) {
+            return back()->with('error', '.env not writable on server. Please update ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY manually.');
+        }
+
+        $appId = trim((string) ($validated['onesignal_app_id'] ?? ''));
+        $apiKey = trim((string) ($validated['onesignal_rest_api_key'] ?? ''));
+
+        if ($appId !== '') {
+            $this->envSet($envPath, 'ONESIGNAL_APP_ID', $appId);
+        }
+        if ($apiKey !== '') {
+            $this->envSet($envPath, 'ONESIGNAL_REST_API_KEY', $apiKey);
+        }
+
+        try {
+            Artisan::call('config:clear');
+            Artisan::call('cache:clear');
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return back()->with('success', 'Notification settings updated.');
+    }
+
+    private function envSet(string $envPath, string $key, string $value): void
+    {
+        $value = str_replace(["\r", "\n"], '', $value);
+        $needsQuotes = (bool) preg_match('~[\s#="]~', $value);
+        $escaped = $needsQuotes ? '"' . addcslashes($value, '"') . '"' : $value;
+
+        $lines = File::exists($envPath)
+            ? preg_split("~\r\n|\n|\r~", (string) File::get($envPath))
+            : [];
+
+        $found = false;
+        foreach ($lines as $i => $line) {
+            if (preg_match('~^\s*' . preg_quote($key, '~') . '\s*=~u', (string) $line)) {
+                $lines[$i] = $key . '=' . $escaped;
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $lines[] = $key . '=' . $escaped;
+        }
+
+        File::put($envPath, implode(PHP_EOL, $lines) . PHP_EOL);
+    }
+
+    private function readHistory(): array
+    {
+        if (!File::exists($this->historyPath)) {
+            return [];
+        }
+        $raw = File::get($this->historyPath);
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function appendHistory(array $entry): void
+    {
+        $history = $this->readHistory();
+        array_unshift($history, $entry);
+        $history = array_slice($history, 0, 50);
+        File::ensureDirectoryExists(dirname($this->historyPath));
+        File::put($this->historyPath, json_encode($history, JSON_PRETTY_PRINT));
+    }
+}

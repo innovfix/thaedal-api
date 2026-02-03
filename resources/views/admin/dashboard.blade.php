@@ -26,7 +26,7 @@
                 <li class="flex items-center justify-between"><span>Premium users total</span><span class="font-semibold">{{ number_format($stats['premium_users_total']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Total video category</span><span class="font-semibold">{{ number_format($stats['total_categories']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Total videos</span><span class="font-semibold">{{ number_format($stats['total_videos']) }}</span></li>
-                <li class="flex items-center justify-between"><span>Total payment</span><span class="font-semibold">{{ number_format($stats['total_payment'], 2) }}</span></li>
+                <li class="flex items-center justify-between"><span>Total payment</span><span class="font-semibold">₹{{ number_format($stats['total_payment'], 2) }}</span></li>
                 <li class="flex items-center justify-between"><span>Demo video views</span><span class="font-semibold">{{ number_format($stats['paywall_video_views']) }}</span></li>
             </ul>
             @if(!empty($stats['razorpay_error']))
@@ -45,7 +45,7 @@
                 <li class="flex items-center justify-between"><span>Today register user</span><span class="font-semibold">{{ number_format($stats['today_register_users']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Today trial user</span><span class="font-semibold">{{ number_format($stats['today_trial_users']) }}</span></li>
                 <li class="flex items-center justify-between"><span>Today premium user</span><span class="font-semibold">{{ number_format($stats['today_premium_users']) }}</span></li>
-                <li class="flex items-center justify-between"><span>Today payment</span><span class="font-semibold">{{ number_format($stats['today_payment'], 2) }}</span></li>
+                <li class="flex items-center justify-between"><span>Today payment</span><span class="font-semibold">₹{{ number_format($stats['today_payment'], 2) }}</span></li>
             </ul>
         </div>
     </div>
@@ -53,11 +53,6 @@
     <div class="bg-white rounded-lg shadow">
         <div class="p-6 border-b flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-800"> App Install/Uninstall</h3>
-            <form method="GET" class="flex items-center gap-2">
-                <input type="hidden" name="date" value="{{ $selectedDateInput }}">
-                <input type="date" name="install_date" value="{{ $installDateInput }}" class="border rounded px-3 py-2 text-sm">
-                <button type="submit" class="px-3 py-2 text-sm bg-gray-900 text-white rounded">Apply</button>
-            </form>
         </div>
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -96,6 +91,7 @@
                                 Uninstalled
                             </span>
                             <span class="font-semibold text-red-600">{{ number_format($stats["today_uninstalled_users"]) }}</span>
+                        <li class="flex items-center justify-between"><span>Total (Install + Uninstall)</span><span class="font-semibold">{{ number_format($stats['today_installed_users'] + $stats['today_uninstalled_users']) }}</span></li>
                         </li>
                     </ul>
                 </div>
@@ -190,7 +186,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-2 text-center font-semibold">{{ $row->users_count }}</td>
-                            <td class="px-4 py-2 text-right font-semibold text-green-700">{{ number_format($row->expected_amount) }}</td>
+                            <td class="px-4 py-2 text-right font-semibold text-green-700">₹{{ number_format($row->expected_amount) }}</td>
                             <td class="px-4 py-2 text-center">
                                 <a href="?autopay_date={{ $row->charge_date }}" class="text-blue-600 hover:underline text-xs">View Users</a>
                             </td>
@@ -201,7 +197,7 @@
                         <tr>
                             <td class="px-4 py-2 font-semibold">Total</td>
                             <td class="px-4 py-2 text-center font-semibold">{{ $autopaySummary->sum('users_count') }}</td>
-                            <td class="px-4 py-2 text-right font-semibold text-green-700">{{ number_format($autopaySummary->sum('expected_amount')) }}</td>
+                            <td class="px-4 py-2 text-right font-semibold text-green-700">₹{{ number_format($autopaySummary->sum('expected_amount')) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>

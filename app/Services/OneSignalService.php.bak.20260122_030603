@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+
+class OneSignalService
+{
+    public function configured(): bool
+    {
+        return (string) config('services.onesignal.app_id') !== ''
+            && (string) config('services.onesignal.rest_api_key') !== '';
+    }
+
+    /**
+     * Send a push notification to OneSignal.
+     *
+     * @param string $title
+     * @param string $message
+     * @param array $options Supported keys: url, included_segments
+     */
+    public function send(string $title, string $message, array $options = []): array
+    {
+        $appId = (string) config('services.onesignal.app_id');
+        $apiKey = (string) config('services.onesignal.rest_api_key');
+
+        if ($appId === '' || $apiKey === '') {
+            throw new \RuntimeException('OneSignal is not configured (missing ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY).');
+        }
+
+        $payload = [
+            'app_id' => $appId,
+            'included_segments' => $options['included_segments'] ?? ['All'],
+            'headings' => ['en' => $title],
+            'contents' => ['en' => $message],
+        ];
+
+        if (!empty($options['url'])) {
+            $payload['url'] = $options['url'];
+        }
+
+        $resp = Http::withHeaders([
+            'Authorization' => "Basic {$apiKey}",
+            'Accept' => 'application/json',
+        ])->post('https://onesignal.com/api/v1/notifications', $payload);
+
+        if (!$resp->successful()) {
+            throw new \RuntimeException('OneSignal API error: ' . $resp->status() . ' ' . $resp->body());
+        }
+
+        return $resp->json();
+    }
+}
