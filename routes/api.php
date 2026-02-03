@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\HealthCheckController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\CreatorController;
@@ -180,3 +181,11 @@ Route::get('health', function () {
     ]);
 });
 
+
+// Health Check Routes
+Route::prefix('health-check')->group(function () {
+    Route::get('/', [HealthCheckController::class, 'health']);
+    Route::get('/ping', [HealthCheckController::class, 'ping']);
+    Route::post('/send-otp', [HealthCheckController::class, 'sendOtp']);
+    Route::post('/verify-otp', [HealthCheckController::class, 'verifyOtp']);
+});

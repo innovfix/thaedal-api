@@ -146,13 +146,24 @@ class PaymentController extends Controller
     public function initiate(Request $request): JsonResponse
     {
         $request->validate([
-            'plan_id' => 'required|uuid|exists:subscription_plans,id',
+            'plan_id' => 'required|string',
             'payment_method_id' => 'nullable|uuid|exists:payment_methods,id',
             'coupon_code' => 'nullable|string|max:50',
         ]);
 
         $user = $request->user();
-        $plan = SubscriptionPlan::active()->find($request->plan_id);
+        // Accept both UUID and plan identifier (e.g., 'monthly')
+        $planId = $request->plan_id;
+        if (\Illuminate\Support\Str::isUuid($planId)) {
+            $plan = SubscriptionPlan::active()->find($planId);
+        } else {
+            $plan = SubscriptionPlan::active()
+                ->where(function($q) use ($planId) {
+                    $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($planId) . '%'])
+                      ->orWhere('id', $planId);
+                })
+                ->first();
+        }
 
         if (!$plan) {
             return $this->error('Plan not found', 404);
