@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VideoController;
 use App\Http\Controllers\Api\PaywallController;
+use App\Http\Controllers\Api\RazorpayWebhookController;
 use App\Http\Controllers\Api\HomeTopicController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +63,9 @@ Route::prefix('v1')->group(function () {
 
     // ==================== Protected Routes ====================
     
+    // Razorpay Webhook (public - no auth required)
+    Route::post('payments/razorpay/webhook', [RazorpayWebhookController::class, 'handle']);
+
     Route::middleware('auth:sanctum')->group(function () {
 
         // Auth
@@ -93,6 +97,7 @@ Route::prefix('v1')->group(function () {
             Route::get('plans', [SubscriptionController::class, 'plans']);
             Route::get('my', [SubscriptionController::class, 'mySubscription']);
             Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
+            Route::post('create-subscription', [SubscriptionController::class, 'subscribe']);
             Route::post('cancel', [SubscriptionController::class, 'cancel']);
             Route::post('autopay/enable', [SubscriptionController::class, 'enableAutopay']);
             Route::post('autopay/disable', [SubscriptionController::class, 'disableAutopay']);
