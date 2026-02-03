@@ -79,6 +79,9 @@ class AuthController extends Controller
             return $this->error('Invalid or expired OTP', 422);
         }
 
+        // Mark OTP as used BEFORE processing (to prevent reuse during transaction)
+        $otp->markAsUsed();
+
         return DB::transaction(function () use ($request, $phoneNumber) {
             // Find or create user
             $user = User::firstOrCreate(

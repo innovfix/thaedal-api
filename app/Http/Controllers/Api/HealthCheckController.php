@@ -27,15 +27,37 @@ class HealthCheckController extends Controller
 
     public function health(): JsonResponse
     {
-        $checks = ['database' => false, 'cache' => false, 'razorpay' => false];
+        $checks = ['database' => false, 'cache' => false, 'razorpay' => false, 'otp_delivery' => false];
+        
+        // Database check
         try { DB::select('SELECT 1'); $checks['database'] = true; } catch (\Exception $e) {}
+        
+        // Cache check
         try { Cache::put('hc', 'ok', 10); $checks['cache'] = Cache::get('hc') === 'ok'; } catch (\Exception $e) {}
+        
+        // Razorpay check
         try {
             $api = new Api(config('services.razorpay.key_id'), config('services.razorpay.key_secret'));
             $api->order->all(['count' => 1]);
             $checks['razorpay'] = true;
         } catch (\Exception $e) {}
-        return response()->json(['status' => in_array(false, $checks) ? 'degraded' : 'healthy', 'checks' => $checks]);
+        
+        // OTP delivery rate check (last 6 hours)
+        try {
+            $sent = Otp::where('created_at', '>', now()->subHours(6))->count();
+            $verified = Otp::where('is_used', true)->where('created_at', '>', now()->subHours(6))->count();
+            $rate = $sent > 0 ? ($verified / $sent) * 100 : 100;
+            $checks['otp_delivery'] = $rate > 50; // Healthy if >50% delivery rate
+            $checks['otp_delivery_rate'] = round($rate, 1) . '%';
+        } catch (\Exception $e) {}
+        
+        $healthy = !in_array(false, array_filter($checks, fn($v) => is_bool($v)));
+        
+        return response()->json([
+            'status' => $healthy ? 'healthy' : 'degraded',
+            'checks' => $checks,
+            'timestamp' => now()->toIso8601String(),
+        ]);
     }
 
     public function sendOtp(Request $request): JsonResponse
@@ -68,5 +90,21 @@ class HealthCheckController extends Controller
     public function ping(): JsonResponse
     {
         return response()->json(['pong' => true, 'time' => now()->toIso8601String()]);
+    }
+    
+    public function otpStats(): JsonResponse
+    {
+        $hours = 6;
+        $sent = Otp::where('created_at', '>', now()->subHours($hours))->count();
+        $verified = Otp::where('is_used', true)->where('created_at', '>', now()->subHours($hours))->count();
+        $rate = $sent > 0 ? round(($verified / $sent) * 100, 1) : 0;
+        
+        return response()->json([
+            'period_hours' => $hours,
+            'otps_sent' => $sent,
+            'otps_verified' => $verified,
+            'delivery_rate' => $rate . '%',
+            'status' => $rate > 50 ? 'healthy' : ($rate > 20 ? 'degraded' : 'critical'),
+        ]);
     }
 }
